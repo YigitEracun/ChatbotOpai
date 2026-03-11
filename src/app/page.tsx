@@ -20,13 +20,23 @@ export default function Home() {
     setInputValue('');
     setMessages((prev) => [...prev, { text, type: 'user' }, { text: '', type: 'typing' }]);
 
-    try {
+    t    try {
       // Backend API'nize istek atıyoruz
-      const res = await fetch('/api/chatkit/session', { method: 'POST' });
+      const res = await fetch('/api/chatkit/session', { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: text }) // <-- DEĞİŞİKLİK BURADA
+      });
       const data = await res.json();
       
       setMessages((prev) => {
         const filtered = prev.filter((msg) => msg.type !== 'typing');
+        // Eğer arkadan hata metni dönerse ekrana yansıtalım (Örn: API eksik vb.)
+        if (data.error) {
+           return [...filtered, { text: `Hata: ${data.error}`, type: 'bot' }];
+        }
         return [...filtered, { text: data.reply || 'Yanıt alınamadı.', type: 'bot' }];
       });
     } catch {
