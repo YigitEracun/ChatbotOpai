@@ -20,26 +20,26 @@ export default function Home() {
     setInputValue('');
     setMessages((prev) => [...prev, { text, type: 'user' }, { text: '', type: 'typing' }]);
 
-        try {
+    try {
       // Backend API'nize istek atıyoruz
       const res = await fetch('/api/chatkit/session', { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ message: text }) // <-- DEĞİŞİKLİK BURADA
+        body: JSON.stringify({ message: text }) 
       });
       const data = await res.json();
       
       setMessages((prev) => {
         const filtered = prev.filter((msg) => msg.type !== 'typing');
-        // Eğer arkadan hata metni dönerse ekrana yansıtalım (Örn: API eksik vb.)
+        // Eğer arkadan hata metni dönerse ekrana yansıtalım
         if (data.error) {
            return [...filtered, { text: `Hata: ${data.error}`, type: 'bot' }];
         }
         return [...filtered, { text: data.reply || 'Yanıt alınamadı.', type: 'bot' }];
       });
-    } catch {
+    } catch (err) {
       setMessages((prev) => {
         const filtered = prev.filter((msg) => msg.type !== 'typing');
         return [...filtered, { text: 'Bağlantı hatası. Lütfen tekrar deneyin.', type: 'bot' }];
@@ -112,7 +112,7 @@ export default function Home() {
   );
 }
 
-const styles = {
+const styles: Record<string, React.CSSProperties> = {
   body: {
     fontFamily: 'sans-serif',
     background: '#f0f4f8',
@@ -129,7 +129,7 @@ const styles = {
     borderRadius: '16px',
     boxShadow: '0 8px 40px rgba(0,0,0,0.15)',
     display: 'flex',
-    flexDirection: 'column' as const,
+    flexDirection: 'column',
     overflow: 'hidden',
   },
   chatHeader: {
@@ -164,10 +164,10 @@ const styles = {
   },
   messages: {
     flex: 1,
-    overflowY: 'auto' as const,
+    overflowY: 'auto',
     padding: '20px',
     display: 'flex',
-    flexDirection: 'column' as const,
+    flexDirection: 'column',
     gap: '12px',
   },
   msg: {
