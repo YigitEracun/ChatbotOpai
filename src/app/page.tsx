@@ -20,7 +20,7 @@ export default function Home() {
     setInputValue('');
     setMessages((prev) => [...prev, { text, type: 'user' }, { text: '', type: 'typing' }]);
 
-        try {
+    try {
       // Backend API'nize istek atıyoruz
       const res = await fetch('/api/chatkit/session', { 
         method: 'POST',
