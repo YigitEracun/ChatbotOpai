@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const OpenAI = require('openai');
 const path = require('path');
 
 const app = express();
@@ -10,21 +9,36 @@ app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const WORKFLOW_ID = process.env.OPENAI_WORKFLOW_ID;
 
-// ChatKit session endpoint — frontend buradan client_secret alır
+// ChatKit session endpoint
 app.post('/api/chatkit/session', async (req, res) => {
   try {
-    const session = await openai.chatkit.sessions.create({
-      workflow_id: WORKFLOW_ID,
-      user: 'user-' + Date.now(), // Her ziyaretçi için benzersiz ID
+    const response = await fetch('https://api.openai.com/v1/chatkit/sessions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + OPENAI_API_KEY,
+        'OpenAI-Beta': 'chatkit_beta=v1',
+      },
+      body: JSON.stringify({
+        workflow: { id: WORKFLOW_ID },
+        user: 'user-' + Date.now(),
+      }),
     });
 
-    res.json({ client_secret: session.client_secret });
+    if (!response.ok) {
+      const err = await response.text();
+      console.error('OpenAI hata:', err);
+      return res.status(response.status).json({ error: 'Session oluşturulamadı.' });
+    }
+
+    const data = await response.json();
+    res.json({ client_secret: data.client_secret });
   } catch (err) {
-    console.error('ChatKit session hatası:', err.message);
-    res.status(500).json({ error: 'Session oluşturulamadı.' });
+    console.error('Session hatası:', err.message);
+    res.status(500).json({ error: 'Sunucu hatası.' });
   }
 });
 
