@@ -1,32 +1,26 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 
-// Initialize the OpenAI client using the server-side API key
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST() {
-  try {
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: "OPENAI_API_KEY is not configured on the server." },
-        { status: 500 }
-      );
-    }
+  if (!process.env.OPENAI_API_KEY) {
+    return NextResponse.json(
+      { error: "OPENAI_API_KEY is not set on the server." },
+      { status: 500 }
+    );
+  }
 
-    // Request a short-lived client_secret for a new ChatKit session
-    // This keeps your real API key safe on the server
+  try {
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    // Create an ephemeral session token for ChatKit
     const session = await openai.beta.realtime.sessions.create({
       model: "gpt-4o-realtime-preview-2024-12-17",
     });
 
-    // Return only the ephemeral client_secret to the browser
     return NextResponse.json({ client_secret: session.client_secret });
-  } catch (error: unknown) {
-    console.error("Error creating ChatKit session:", error);
-    const message =
-      error instanceof Error ? error.message : "An unknown error occurred";
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("[chatkit/session] Error:", message);
     return NextResponse.json(
       { error: `Failed to create session: ${message}` },
       { status: 500 }
