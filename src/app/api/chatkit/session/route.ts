@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -7,34 +6,44 @@ export async function POST(req: Request) {
   }
 
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    
-    // Frontend'den gelen mesajı al
     const body = await req.json();
     const userMessage = body.message;
+    
+    // Workflow ID'niz
+    const WORKFLOW_ID = "wf_69b147b431a08190a9c42b7de229f0f40206f716a3fee578";
 
     if (!userMessage) {
       return NextResponse.json({ error: "Mesaj boş olamaz." }, { status: 400 });
     }
 
-    // OpenAI Chat modeline mesajı gönder
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // İstediğiniz modeli seçebilirsiniz
-      messages: [
-        { role: "system", content: "Sen Türkçe konuşan yardımsever bir asistansın." },
-        { role: "user", content: userMessage }
-      ],
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: userMessage }],
+        // Workflow ID'yi extra parametre olarak veya ChatKit endpoint'ine uygun şekilde ekliyoruz
+        user: WORKFLOW_ID 
+      })
     });
 
-    // OpenAI'dan gelen cevabı al
-    const botReply = completion.choices[0].message.content;
+    const data = await response.json();
 
-    // Arayüze "reply" olarak geri gönder
+    if (!response.ok) {
+       console.error("API Hatası:", data);
+       return NextResponse.json({ error: data.error?.message || "Hata oluştu" }, { status: response.status });
+    }
+
+    const botReply = data.choices?.[0]?.message?.content || "Yanıt alınamadı.";
+
     return NextResponse.json({ reply: botReply });
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Bilinmeyen hata";
-    console.error("OpenAI Hatası:", message);
+    console.error("Sistem Hatası:", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
