@@ -158,7 +158,7 @@
     if (t) t.remove();
   }
 
-  async function send() {
+   async function send() {
     const text = input.value.trim();
     if (!text) return;
     input.value = '';
@@ -167,10 +167,20 @@
     showTyping();
 
     try {
-      const res = await fetch('/api/chatkit/session', { method: 'POST' });
+      const res = await fetch('/api/chatkit/session', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }) // <- Kullanıcı mesajı eklendi
+      });
+      
       const data = await res.json();
       removeTyping();
-      addMsg(data.reply || 'Yanıt alınamadı.', 'bot');
+      
+      if (data.error) {
+        addMsg('Hata: ' + data.error, 'bot');
+      } else {
+        addMsg(data.reply || 'Yanıt alınamadı.', 'bot');
+      }
     } catch {
       removeTyping();
       addMsg('Bağlantı hatası. Lütfen tekrar deneyin.', 'bot');
