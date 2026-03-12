@@ -1,15 +1,39 @@
-const openai = require('openai');
+import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
 
-const chatkit = new openai.ChatKit({
-    apiKey: process.env.OPENAI_API_KEY,
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-module.exports = async (req, res) => {
-    const { messages } = req.body;
-    const response = await chatkit.session.create({
-        messages,
-        workflowId: 'wf_69b147b431a08190a9c42b7de229f0f40206f716a3fee578',
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const userMessage: string = body.message ?? '';
+
+    if (!userMessage) {
+      return NextResponse.json({ error: 'Mesaj boş olamaz.' }, { status: 400 });
+    }
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'Sen yardımcı bir yapay zeka asistanısın. Kullanıcının sorularını Türkçe olarak yanıtla.',
+        },
+        {
+          role: 'user',
+          content: userMessage,
+        },
+      ],
     });
-    
-    res.status(200).json(response);
-};
+
+    const reply = completion.choices[0]?.message?.content ?? 'Yanıt alınamadı.';
+
+    return NextResponse.json({ reply });
+  } catch (error: unknown) {
+    console.error('OpenAI API hatası:', error);
+    const message = error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu.';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
